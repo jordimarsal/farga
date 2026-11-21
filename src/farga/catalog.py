@@ -27,9 +27,36 @@ def catalog_path(override: str | Path | None = None) -> Path:
 
 
 def load_catalog(path: Path) -> dict[str, dict[str, Any]]:
-    """Return {piece_id: piece_dict}. Raises json/KeyError as-is on a bad file."""
+    """Return {piece_id: piece_dict}. Raises json/KeyError as-is on a bad file.
+
+    Schema (informal, seed-documented in the $comment): every piece carries
+    id/kind/repo/provides/needs/integration/status/evidence and an OPTIONAL
+    `command` — the EXACT spawn argv for launchable pieces (MCP servers, APIs).
+    Incident #8: a command that was assumed (`uv run <script>`) broke the S5
+    demo; the catalog now carries the tested argv, and this loader validates
+    its shape so a malformed entry fails here, not mid-demo.
+    """
     data = json.loads(path.read_text(encoding="utf-8"))
-    return {piece["id"]: piece for piece in data.get("pieces", [])}
+    pieces: dict[str, dict[str, Any]] = {}
+    for piece in data.get("pieces", []):
+        command = piece.get("command")
+        if command is not None and (
+            not isinstance(command, list)
+            or not command
+            or not all(isinstance(arg, str) and arg for arg in command)
+        ):
+            raise ValueError(
+                f"piece '{piece.get('id')}': command must be a non-empty list of "
+                f"argv strings (saw {command!r})"
+            )
+        pieces[piece["id"]] = piece
+    return pieces
+
+
+def piece_command(piece: dict[str, Any]) -> list[str] | None:
+    """The validated launch argv for a piece, or None (not launchable)."""
+    command = piece.get("command")
+    return list(command) if command else None
 
 
 def check_pieces(manifest: Manifest, catalog: dict[str, dict[str, Any]]) -> list[str]:
