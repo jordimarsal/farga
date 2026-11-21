@@ -320,6 +320,16 @@ def cmd_apply(args: argparse.Namespace) -> int:
 # ---------------------------------------------------------------- status
 
 
+def _gate_cmd(args: argparse.Namespace) -> int:
+    """Gate passthrough (approve/reject/fix) with the SAME binary `run` uses —
+    a 0.8.3 global buildwright has neither request_limit support nor current
+    loop code; mixing binaries across gates and batches is how the S4 dispatch
+    died with 'request_limit of 50'."""
+    _manifest_or_refuse(Path(args.manifest) if args.manifest else None)
+    cmd = [_buildwright_bin(), "harness", args.action, *args.comments]
+    return subprocess.run(cmd, check=False).returncode
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     target, manifest = _manifest_or_refuse(Path(args.manifest) if args.manifest else None)
     print(
@@ -431,6 +441,12 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--manifest")
     s.add_argument("--yes", action="store_true", help="skip buildwright's confirmation")
     s.set_defaults(fn=cmd_apply)
+
+    s = sub.add_parser("gate", help="gate passthrough with the same binary `run` uses")
+    s.add_argument("action", choices=("approve", "reject", "fix"))
+    s.add_argument("comments", nargs="*", help="gate comments (reject/fix text)")
+    s.add_argument("--manifest")
+    s.set_defaults(fn=_gate_cmd)
 
     s = sub.add_parser("status", help="manifest + board + routing state")
     s.add_argument("--manifest")

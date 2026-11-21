@@ -249,3 +249,29 @@ def test_real_pilot_route_matches_applied_routing(monkeypatch, tmp_path):
     monkeypatch.chdir(MCP_PLANE)
     rc = main(["route", "--dry-run"])
     assert rc == 0
+
+
+def test_gate_passthrough_uses_same_binary(tmp_path, monkeypatch):
+    """approve/reject/fix must run through the SAME buildwright binary as run
+    (the 0.8.3 global broke S4: no request_limit support, stale loop code)."""
+    stub = tmp_path / "bw-stub.sh"
+    argv_file = tmp_path / "argv.txt"
+    stub.write_text(
+        "#!/bin/bash\nprintf '%s\\n' \"$@\" > " + shlex.quote(str(argv_file)) + "\nexit 0\n",
+        encoding="utf-8",
+    )
+    stub.chmod(0o755)
+    monkeypatch.setenv("FARGA_BUILDWRIGHT_BIN", str(stub))
+    monkeypatch.chdir(tmp_path)
+    write_manifest(tmp_path, VALID_MANIFEST)
+
+    assert main(["gate", "approve", "demo", "verified"]) == 0
+    assert argv_file.read_text(encoding="utf-8").splitlines() == [
+        "harness",
+        "approve",
+        "demo",
+        "verified",
+    ]
+
+    assert main(["gate", "reject", "redo", "the", "demo"]) == 0
+    assert argv_file.read_text(encoding="utf-8").splitlines()[-1] == "demo"
