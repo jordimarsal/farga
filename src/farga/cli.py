@@ -300,6 +300,8 @@ def cmd_up(args: argparse.Namespace) -> int:
 def cmd_run(args: argparse.Namespace) -> int:
     _manifest_or_refuse(Path(args.manifest) if args.manifest else None)
     cmd = [_buildwright_bin(), "harness", "run", *_clean_passthrough(args.passthrough)]
+    if args.yes:
+        cmd.append("--yes")
     return subprocess.run(cmd, check=False).returncode
 
 
@@ -413,6 +415,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("run", help="S6: buildwright harness run (args passthrough)")
     s.add_argument("--manifest")
+    s.add_argument(
+        "--yes",
+        "-y",
+        action="store_true",
+        help="forward --yes to buildwright (skips its interactive start prompt; "
+        "human gates still park)",
+    )
     s.add_argument(
         "passthrough", nargs=argparse.REMAINDER, help="args for `buildwright harness run`"
     )

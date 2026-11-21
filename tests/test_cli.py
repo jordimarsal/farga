@@ -211,6 +211,28 @@ def test_run_forwards_args_without_separator(tmp_path, monkeypatch):
     ]
 
 
+def test_run_yes_appends_buildwright_flag(tmp_path, monkeypatch):
+    """-y forwards --yes (skips the interactive start prompt; gates still park)."""
+    stub = tmp_path / "bw-stub.sh"
+    argv_file = tmp_path / "argv.txt"
+    stub.write_text(
+        "#!/bin/bash\nprintf '%s\\n' \"$@\" > " + shlex.quote(str(argv_file)) + "\nexit 0\n",
+        encoding="utf-8",
+    )
+    stub.chmod(0o755)
+    monkeypatch.setenv("FARGA_BUILDWRIGHT_BIN", str(stub))
+    monkeypatch.chdir(tmp_path)
+    write_manifest(tmp_path, VALID_MANIFEST)
+    assert main(["run", "-y", "--", "--features", "1"]) == 0
+    assert argv_file.read_text(encoding="utf-8").splitlines() == [
+        "harness",
+        "run",
+        "--features",
+        "1",
+        "--yes",
+    ]
+
+
 # ------------------------------------------------------------------ real world
 
 
