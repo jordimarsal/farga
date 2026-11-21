@@ -326,7 +326,10 @@ def _gate_cmd(args: argparse.Namespace) -> int:
     loop code; mixing binaries across gates and batches is how the S4 dispatch
     died with 'request_limit of 50'."""
     _manifest_or_refuse(Path(args.manifest) if args.manifest else None)
-    cmd = [_buildwright_bin(), "harness", args.action, *args.comments]
+    cmd = [_buildwright_bin(), "harness", args.action]
+    if args.feature:
+        cmd += ["--feature", args.feature]
+    cmd += args.comments
     return subprocess.run(cmd, check=False).returncode
 
 
@@ -445,6 +448,7 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("gate", help="gate passthrough with the same binary `run` uses")
     s.add_argument("action", choices=("approve", "reject", "fix"))
     s.add_argument("comments", nargs="*", help="gate comments (reject/fix text)")
+    s.add_argument("--feature", help="which parked feature (when several are parked)")
     s.add_argument("--manifest")
     s.set_defaults(fn=_gate_cmd)
 

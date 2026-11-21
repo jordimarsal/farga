@@ -275,3 +275,25 @@ def test_gate_passthrough_uses_same_binary(tmp_path, monkeypatch):
 
     assert main(["gate", "reject", "redo", "the", "demo"]) == 0
     assert argv_file.read_text(encoding="utf-8").splitlines()[-1] == "demo"
+
+
+def test_gate_passthrough_forwards_feature(tmp_path, monkeypatch):
+    """With several parks, gates need --feature forwarded (parent + slice)."""
+    stub = tmp_path / "bw-stub.sh"
+    argv_file = tmp_path / "argv.txt"
+    stub.write_text(
+        "#!/bin/bash\nprintf '%s\\n' \"$@\" > " + shlex.quote(str(argv_file)) + "\nexit 0\n",
+        encoding="utf-8",
+    )
+    stub.chmod(0o755)
+    monkeypatch.setenv("FARGA_BUILDWRIGHT_BIN", str(stub))
+    monkeypatch.chdir(tmp_path)
+    write_manifest(tmp_path, VALID_MANIFEST)
+    assert main(["gate", "approve", "--feature", "panel_board", "evidence"]) == 0
+    assert argv_file.read_text(encoding="utf-8").splitlines() == [
+        "harness",
+        "approve",
+        "--feature",
+        "panel_board",
+        "evidence",
+    ]
