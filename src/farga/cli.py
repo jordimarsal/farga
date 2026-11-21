@@ -68,6 +68,11 @@ def _buildwright_bin() -> str:
     return str(DEFAULT_BUILDWRIGHT)
 
 
+def _clean_passthrough(tokens: list[str]) -> list[str]:
+    """argparse REMAINDER keeps a leading '--' separator; buildwright does not want it."""
+    return tokens[1:] if tokens and tokens[0] == "--" else tokens
+
+
 def _manifest_or_refuse(path: Path | None) -> tuple[Path, Manifest]:
     target = path or Path(MANIFEST)
     if not target.is_file():
@@ -294,7 +299,7 @@ def cmd_up(args: argparse.Namespace) -> int:
 
 def cmd_run(args: argparse.Namespace) -> int:
     _manifest_or_refuse(Path(args.manifest) if args.manifest else None)
-    cmd = [_buildwright_bin(), "harness", "run", *args.passthrough]
+    cmd = [_buildwright_bin(), "harness", "run", *_clean_passthrough(args.passthrough)]
     return subprocess.run(cmd, check=False).returncode
 
 

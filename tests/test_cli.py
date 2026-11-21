@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shlex
 from pathlib import Path
 
 import pytest
@@ -175,6 +176,39 @@ def test_up_refuses_missing_installer(tmp_path, monkeypatch):
     write_manifest(tmp_path, VALID_MANIFEST)
     rc = main(["up", "--installer", str(tmp_path / "nope.sh")])
     assert rc == 2
+
+
+# ------------------------------------------------------------------ run passthrough
+
+
+def test_clean_passthrough_strips_leading_separator():
+    from farga.cli import _clean_passthrough
+
+    assert _clean_passthrough(["--", "--features", "2"]) == ["--features", "2"]
+    assert _clean_passthrough(["--features", "2"]) == ["--features", "2"]
+    assert _clean_passthrough([]) == []
+
+
+def test_run_forwards_args_without_separator(tmp_path, monkeypatch):
+    """Hermetic stub as buildwright: the forwarded argv must not contain '--'."""
+    stub = tmp_path / "bw-stub.sh"
+    argv_file = tmp_path / "argv.txt"
+    stub.write_text(
+        "#!/bin/bash\nprintf '%s\\n' \"$@\" > " + shlex.quote(str(argv_file)) + "\nexit 7\n",
+        encoding="utf-8",
+    )
+    stub.chmod(0o755)
+    monkeypatch.setenv("FARGA_BUILDWRIGHT_BIN", str(stub))
+    monkeypatch.chdir(tmp_path)
+    write_manifest(tmp_path, VALID_MANIFEST)
+    rc = main(["run", "--", "--features", "1"])
+    assert rc == 7  # passthrough of the stub's exit code
+    assert argv_file.read_text(encoding="utf-8").splitlines() == [
+        "harness",
+        "run",
+        "--features",
+        "1",
+    ]
 
 
 # ------------------------------------------------------------------ real world
