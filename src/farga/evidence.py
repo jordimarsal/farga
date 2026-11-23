@@ -32,7 +32,11 @@ NULL_RESULTS: dict[str, str] = {
     "planner": (
         "SENVAL NO (P2b reduida, fleet-eval 6a5bb2f): pla huma 0.198 vs Huihui "
         "0.204 sobre 8 tasques amb el mateix executor — 0 victories de l'huma. "
-        "El planning no s'enruta per model: el fa l'agent de la sessio."
+        "El planning no s'enruta per model: el fa l'agent de la sessio. "
+        "Desempat sota nul, si algú aïlla el rol per velocitat: qwen36 "
+        "(207 t/s, cap mesura de planner en contra); MAI el qwen4b — ultim a "
+        "P v2 (ratio 1.95, 4B baix) i col·lapse 0/20 a P01 de P2b. Aixo es "
+        "POLITICA de desempat, no evidencia de qualitat."
     ),
     "reviewer": (
         "SENVAL PLA (C2 n=33, fleet-eval 775120f): banda 0.12-0.33, McNemar "

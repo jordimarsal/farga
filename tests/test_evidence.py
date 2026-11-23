@@ -17,6 +17,14 @@ def test_null_results_cite_fleet_eval_commits() -> None:
     assert "McNemar" in NULL_RESULTS["reviewer"]
 
 
+def test_planner_null_carries_speed_tiebreak_policy() -> None:
+    """Sota el nul, el desempat és velocitat: qwen36 sí, qwen4b mai."""
+    null = NULL_RESULTS["planner"]
+    assert "qwen36" in null and "207 t/s" in null
+    assert "MAI el qwen4b" in null
+    assert "POLITICA de desempat" in null  # mai disfressat d'evidencia
+
+
 def test_default_models_keeps_bw_role_compat_and_alternatives() -> None:
     models = default_models()
     assert models.planner == "local/gemma4"
