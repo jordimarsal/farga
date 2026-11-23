@@ -19,6 +19,11 @@ class Wire:
 
 
 WIRES: dict[str, Wire] = {
+    "local/inkling2": Wire(
+        base_url="http://127.0.0.1:8999/v1",
+        model="Inkling-2-Mini-UD-Q4_K_M",
+        context_window=65536,  # 1 slot; el pin del .txt (tensor-split 0.25,1) no aguanta mes buffers de calcul
+    ),
     "local/gemma4": Wire(
         base_url="http://127.0.0.1:8999/v1",
         model="gemma-4-26B-A4B-it-UD-Q5_K_XL",
