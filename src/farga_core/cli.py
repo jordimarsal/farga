@@ -381,7 +381,7 @@ def cmd_status(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="farga-core", description=__doc__.splitlines()[0])
-    p.add_argument("--version", action="version", version=f"farga {__version__}")
+    p.add_argument("--version", action="version", version=f"farga-core {__version__}")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     s = sub.add_parser("new", help="S0: git repo + concept.md skeleton")
