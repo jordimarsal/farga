@@ -9,8 +9,8 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from farga.schema import Manifest, Stack
-from farga.wires import SERVER_RULES, UnknownWire, wire_for
+from farga_core.schema import Manifest, Stack
+from farga_core.wires import SERVER_RULES, UnknownWire, wire_for
 
 GITIGNORE_BLOCK = """\
 # farga (estat local, proposals)
@@ -61,7 +61,7 @@ def render_models_yaml(manifest: Manifest) -> str:
         except UnknownWire:
             raise UnknownWire(
                 f"manifest uses '{mid}' but no wire is defined for it; either extend "
-                "farga.wires.WIRES or write the project models.yaml entry by hand"
+                "farga_core.wires.WIRES or write the project models.yaml entry by hand"
             ) from None
 
     lines = [

@@ -12,8 +12,8 @@ from pathlib import Path
 
 import yaml
 
-from farga.evidence import why_for
-from farga.schema import ROLES, Models
+from farga_core.evidence import why_for
+from farga_core.schema import ROLES, Models
 
 PLUS_RE = re.compile(r"^\+\s*BW_ROLE_([A-Z][A-Z0-9_]*)\s*=\s*(\S+)\s*$", re.MULTILINE)
 

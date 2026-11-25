@@ -3,7 +3,7 @@ requires = ["hatchling>=1.26"]
 build-backend = "hatchling.build"
 
 [project]
-name = "farga"
+name = "farga-core"
 version = "0.1.0"
 description = "Concept-to-PR pipeline over the personal stack: manifest as the single contract, evidence-based model routing (debrief + buildwright), SDD execution via harness"
 readme = "README.md"
@@ -26,7 +26,7 @@ dependencies = [
 ]
 
 [project.scripts]
-farga = "farga.cli:main"
+farga-core = "farga_core.cli:main"
 
 [dependency-groups]
 dev = [
@@ -37,7 +37,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/farga"]
+packages = ["src/farga_core"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1,6 +1,6 @@
 """Piece catalog: the declarative registry of reusable own-repos.
 
-Lives at ~/.config/farga/peces.json (FARGA_PECES or --catalog to override).
+Lives at ~/.config/farga-core/peces.json (FARGA_PECES or --catalog to override).
 The manifest references pieces by id; this module answers "does it exist?".
 """
 
@@ -10,9 +10,9 @@ import json
 from pathlib import Path
 from typing import Any
 
-from farga.schema import Manifest
+from farga_core.schema import Manifest
 
-DEFAULT_CATALOG = Path.home() / ".config" / "farga" / "peces.json"
+DEFAULT_CATALOG = Path.home() / ".config" / "farga-core" / "peces.json"
 
 
 def catalog_path(override: str | Path | None = None) -> Path:

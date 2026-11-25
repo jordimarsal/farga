@@ -66,5 +66,5 @@ def wire_for(registry_id: str) -> Wire:
     except KeyError:
         raise UnknownWire(
             f"no wire for '{registry_id}' (known: {', '.join(sorted(WIRES))}) — "
-            "extend farga.wires.WIRES or add the entry to the project models.yaml by hand"
+            "extend farga_core.wires.WIRES or add the entry to the project models.yaml by hand"
         ) from None

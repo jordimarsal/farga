@@ -89,7 +89,7 @@ wheels = [
 ]
 
 [[package]]
-name = "farga"
+name = "farga-core"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

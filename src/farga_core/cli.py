@@ -16,17 +16,17 @@ from pathlib import Path
 
 import yaml
 
-from farga import __version__
-from farga.catalog import catalog_path, check_pieces, load_catalog
-from farga.evidence import default_models
-from farga.proposal import (
+from farga_core import __version__
+from farga_core.catalog import catalog_path, check_pieces, load_catalog
+from farga_core.evidence import default_models
+from farga_core.proposal import (
     parse_plus_lines,
     registry_ids,
     render_greenfield,
     validate_against,
 )
-from farga.scaffold import DEFAULT_INSTALLER, render_models_yaml, up
-from farga.schema import (
+from farga_core.scaffold import DEFAULT_INSTALLER, render_models_yaml, up
+from farga_core.schema import (
     API_VERSION,
     ROLES,
     Architecture,
@@ -195,7 +195,7 @@ observability:
         return 2
 
     # Validate before writing: the file we emit must load back cleanly.
-    from farga.schema import Manifest
+    from farga_core.schema import Manifest
 
     m = Manifest.model_validate(yaml.safe_load(body))
     if check_pieces(m, catalog):
@@ -380,7 +380,7 @@ def cmd_status(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="farga", description=__doc__.splitlines()[0])
+    p = argparse.ArgumentParser(prog="farga-core", description=__doc__.splitlines()[0])
     p.add_argument("--version", action="version", version=f"farga {__version__}")
     sub = p.add_subparsers(dest="cmd", required=True)
 

@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from farga.proposal import (
+from farga_core.proposal import (
     NOT_APPLIED,
     parse_plus_lines,
     registry_ids,
     render_greenfield,
     validate_against,
 )
-from farga.schema import Models
+from farga_core.schema import Models
 
 
 def test_render_greenfield_all_same_server(manifest_dict):

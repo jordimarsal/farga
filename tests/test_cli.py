@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from conftest import VALID_MANIFEST, write_catalog, write_manifest
-from farga.cli import main
+from farga_core.cli import main
 
 MCP_PLANE = Path.home() / "Documents" / "CV" / "projects" / "mcp-plane"
 
@@ -58,7 +58,7 @@ def test_architect_writes_valid_manifest(tmp_path, monkeypatch):
         ]
     )
     assert rc == 0
-    from farga.schema import load_manifest
+    from farga_core.schema import load_manifest
 
     manifest = load_manifest(Path("farga.yaml"))
     assert manifest.models.planner == "local/gemma4"
@@ -182,7 +182,7 @@ def test_up_refuses_missing_installer(tmp_path, monkeypatch):
 
 
 def test_clean_passthrough_strips_leading_separator():
-    from farga.cli import _clean_passthrough
+    from farga_core.cli import _clean_passthrough
 
     assert _clean_passthrough(["--", "--features", "2"]) == ["--features", "2"]
     assert _clean_passthrough(["--features", "2"]) == ["--features", "2"]

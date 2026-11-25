@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from conftest import VALID_MANIFEST, write_manifest
-from farga.schema import Manifest, load_manifest
+from farga_core.schema import Manifest, load_manifest
 
 
 def test_valid_manifest_loads(manifest_dict, tmp_path):

@@ -18,7 +18,7 @@ No number invented here; every cited figure lives in the fleet-eval repo
 
 from __future__ import annotations
 
-from farga.schema import Models
+from farga_core.schema import Models
 
 S5_RULE = (
     "S5 llama-slots — un servidor carrega un sol model i els rols d'un run son "

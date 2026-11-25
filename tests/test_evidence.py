@@ -1,6 +1,6 @@
 """Tests de l'honest pass d'evidence (campanya fleet-eval 2026-11-23)."""
 
-from farga.evidence import DISPATCH_MAP, NULL_RESULTS, WHY_BENCH, default_models, why_for
+from farga_core.evidence import DISPATCH_MAP, NULL_RESULTS, WHY_BENCH, default_models, why_for
 
 
 def test_no_planner_entry_in_dispatch_map() -> None:

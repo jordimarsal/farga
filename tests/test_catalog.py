@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 
 from conftest import write_catalog
-from farga.catalog import check_pieces, load_catalog
-from farga.schema import Manifest
+from farga_core.catalog import check_pieces, load_catalog
+from farga_core.schema import Manifest
 
 
 def test_known_pieces_pass(manifest_dict, tmp_path):
@@ -30,7 +30,7 @@ def test_command_shape_validated(tmp_path):
     good = tmp_path / "good.json"
     good.write_text(json.dumps(base), encoding="utf-8")
     catalog = load_catalog(good)
-    from farga.catalog import piece_command
+    from farga_core.catalog import piece_command
 
     assert piece_command(catalog["x"]) == ["uv", "run", "x"]
 

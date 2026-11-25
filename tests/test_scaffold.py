@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import pytest
 
-from farga.scaffold import (
+from farga_core.scaffold import (
     GITIGNORE_BLOCK,
     ensure_gitignore,
     installer_argv,
     render_models_yaml,
 )
-from farga.schema import Architecture, Manifest, Stack, Tool, Workflow
-from farga.wires import UnknownWire
+from farga_core.schema import Architecture, Manifest, Stack, Tool, Workflow
+from farga_core.wires import UnknownWire
 
 
 def _stack(modules: list[str]) -> Stack:
@@ -46,7 +46,7 @@ def test_render_models_yaml_roles_then_alternatives(manifest_dict):
 
 def test_render_models_yaml_unknown_wire_lists_known(manifest_dict):
     manifest_dict["models"]["alternatives"]["daily"] = "local/sc117"
-    with pytest.raises(UnknownWire, match="extend farga.wires.WIRES"):
+    with pytest.raises(UnknownWire, match="extend farga_core.wires.WIRES"):
         render_models_yaml(Manifest.model_validate(manifest_dict))
 
 
