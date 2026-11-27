@@ -235,7 +235,9 @@ def seed_first_feature(project: Path) -> dict[str, object] | None:
         (line.strip() for line in concept.splitlines() if line.strip()), "Projecte inicial"
     )
     title = re.sub(r"^#+\s*", "", first_line)[:100]
-    slug = re.sub(r"[^a-z0-9]+", "_", title.lower()).strip("_") or "initial_concept"
+    slug = (
+        re.sub(r"[^a-z0-9]+", "_", title.lower()).strip("_")[:60] or "initial_concept"
+    )
     feature = {
         "id": 1,
         "name": slug,
