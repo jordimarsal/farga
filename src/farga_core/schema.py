@@ -40,6 +40,19 @@ class Architecture(str, Enum):
     event_driven = "event-driven"
 
 
+class Language(str, Enum):
+    """Harness stacks (`templates/stacks/<name>`): the source of truth for conventions."""
+
+    typescript = "typescript"
+    node = "node"
+    python = "python"
+    go = "go"
+    java = "java"
+    rust = "rust"
+    android = "android"
+    generic = "generic"
+
+
 class ConceptStatus(str, Enum):
     drafted = "drafted"
     profiled = "profiled"
@@ -66,6 +79,7 @@ class Stack(BaseModel):
     tool: Tool = Tool.opencode
     workflow: Workflow = Workflow.hybrid
     architecture: Architecture = Architecture.modular_monolith
+    language: Language = Language.typescript
     modules: list[str] = Field(default_factory=list)
 
 

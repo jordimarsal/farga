@@ -100,6 +100,44 @@ def _run(cmd: list[str], cwd: Path | None = None) -> int:
     return subprocess.run(cmd, cwd=cwd, check=False).returncode
 
 
+# The published harness detects the stack from files; a new project is empty and
+# would fall back to "generic". These temporary markers make the installer see the
+# stack chosen in the manifest. They are removed before the initial commit.
+STACK_MARKERS: dict[str, tuple[str, ...]] = {
+    "typescript": ("tsconfig.json",),
+    "node": ("package.json",),
+    "python": ("pyproject.toml",),
+    "go": ("go.mod",),
+    "java": ("pom.xml",),
+    "rust": ("Cargo.toml",),
+    "android": ("build.gradle", "app/src/main/AndroidManifest.xml"),
+    "generic": (),
+}
+
+
+def ensure_stack_markers(project: Path, language: str) -> list[Path]:
+    """Create the harness detection markers that are missing; return the created ones."""
+    created: list[Path] = []
+    for relative in STACK_MARKERS.get(language, ()):
+        path = project / relative
+        if path.exists():
+            continue
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("{}\n" if path.suffix == ".json" else "", encoding="utf-8")
+        created.append(path)
+    return created
+
+
+def remove_stack_markers(project: Path, created: list[Path]) -> None:
+    """Remove only the markers this run created, plus the dirs it had to make."""
+    for path in reversed(created):
+        path.unlink(missing_ok=True)
+        parent = path.parent
+        while parent != project and parent.is_dir() and not any(parent.iterdir()):
+            parent.rmdir()
+            parent = parent.parent
+
+
 SCAFFOLD_COMMIT_PATHS = (
     "AGENTS.md",
     "HARNESS.md",
@@ -156,12 +194,16 @@ def up(
         return plan
 
     project.mkdir(parents=True, exist_ok=True)
-    for label, cmd in steps:
-        if not cmd:
-            continue
-        rc = _run(cmd)
-        if rc != 0:
-            raise RuntimeError(f"scaffold step failed (rc={rc}): {label}")
+    created_markers = ensure_stack_markers(project, manifest.stack.language.value)
+    try:
+        for label, cmd in steps:
+            if not cmd:
+                continue
+            rc = _run(cmd)
+            if rc != 0:
+                raise RuntimeError(f"scaffold step failed (rc={rc}): {label}")
+    finally:
+        remove_stack_markers(project, created_markers)
 
     (project / "models.yaml").write_text(render_models_yaml(manifest), encoding="utf-8")
     gi = project / ".gitignore"

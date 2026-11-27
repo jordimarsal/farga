@@ -30,6 +30,7 @@ from farga_core.schema import (
     API_VERSION,
     ROLES,
     Architecture,
+    Language,
     Manifest,
     Tool,
     Workflow,
@@ -150,6 +151,7 @@ stack:
   tool: {args.tool}
   workflow: {args.workflow}
   architecture: {args.architecture}
+  language: {args.language}
   modules: [{", ".join(modules)}]
 
 pieces:
@@ -397,6 +399,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument(
         "--architecture", default="modular-monolith", choices=[a.value for a in Architecture]
     )
+    s.add_argument("--language", default="typescript", choices=[lang.value for lang in Language])
     s.add_argument("--modules", default="", help="comma-separated harness modules")
     s.add_argument("--piece", action="append", metavar="ID:ROLE", help="catalog piece (repeatable)")
     s.add_argument(

@@ -6,7 +6,9 @@ from farga_core.scaffold import (
     GITIGNORE_BLOCK,
     commit_paths_for,
     ensure_gitignore,
+    ensure_stack_markers,
     installer_argv,
+    remove_stack_markers,
     render_models_yaml,
 )
 from farga_core.schema import Architecture, Manifest, Stack, Tool, Workflow
@@ -49,6 +51,42 @@ def test_render_models_yaml_unknown_wire_lists_known(manifest_dict):
     manifest_dict["models"]["alternatives"]["daily"] = "local/sc117"
     with pytest.raises(UnknownWire, match="extend farga_core.wires.WIRES"):
         render_models_yaml(Manifest.model_validate(manifest_dict))
+
+
+def test_stack_markers_are_created_and_removed(tmp_path):
+    project = tmp_path / "proj"
+    project.mkdir()
+
+    created = ensure_stack_markers(project, "typescript")
+
+    assert [path.name for path in created] == ["tsconfig.json"]
+    assert (project / "tsconfig.json").is_file()
+    remove_stack_markers(project, created)
+    assert not (project / "tsconfig.json").exists()
+
+
+def test_existing_stack_marker_is_never_removed(tmp_path):
+    project = tmp_path / "proj"
+    project.mkdir()
+    (project / "package.json").write_text('{"name":"real"}', encoding="utf-8")
+
+    created = ensure_stack_markers(project, "node")
+
+    assert created == []
+    remove_stack_markers(project, created)
+    assert (project / "package.json").read_text(encoding="utf-8") == '{"name":"real"}'
+
+
+def test_android_marker_creates_and_cleans_nested_dirs(tmp_path):
+    project = tmp_path / "proj"
+    project.mkdir()
+
+    created = ensure_stack_markers(project, "android")
+    assert (project / "app" / "src" / "main" / "AndroidManifest.xml").is_file()
+
+    remove_stack_markers(project, created)
+    assert not (project / "app").exists()
+    assert not (project / "build.gradle").exists()
 
 
 def test_ensure_gitignore_idempotent():

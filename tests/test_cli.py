@@ -69,6 +69,18 @@ def test_architect_writes_valid_manifest(tmp_path, monkeypatch):
     assert [p.id for p in manifest.pieces] == ["mcp-reddit", "mcp-png"]
 
 
+def test_architect_language_is_written_and_validated(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    catalog = write_catalog(tmp_path)
+    rc = main(["architect", "--catalog", str(catalog), "--language", "typescript"])
+    assert rc == 0
+    from farga_core.schema import Language, load_manifest
+
+    manifest = load_manifest(Path("farga.yaml"))
+    assert manifest.stack.language is Language.typescript
+    assert main(["validate"]) == 0
+
+
 def test_architect_refuses_overwrite_and_unknown_piece(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     catalog = write_catalog(tmp_path)
