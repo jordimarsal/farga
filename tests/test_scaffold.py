@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from farga_core.scaffold import (
@@ -9,6 +11,7 @@ from farga_core.scaffold import (
     ensure_stack_scaffold,
     installer_argv,
     render_models_yaml,
+    seed_first_feature,
 )
 from farga_core.schema import Architecture, Manifest, Stack, Tool, Workflow
 from farga_core.wires import UnknownWire
@@ -50,6 +53,41 @@ def test_render_models_yaml_unknown_wire_lists_known(manifest_dict):
     manifest_dict["models"]["alternatives"]["daily"] = "local/sc117"
     with pytest.raises(UnknownWire, match="extend farga_core.wires.WIRES"):
         render_models_yaml(Manifest.model_validate(manifest_dict))
+
+
+def test_first_feature_is_seeded_from_the_concept(tmp_path):
+    project = tmp_path / "proj"
+    harness = project / "harness"
+    harness.mkdir(parents=True)
+    (harness / "feature_list.json").write_text(
+        json.dumps({"project": {"name": "proj"}, "features": []}), encoding="utf-8"
+    )
+    (project / "concept.md").write_text(
+        "Un gestor de preferits de manga per a Brave amb cerca i etiquetes.\n",
+        encoding="utf-8",
+    )
+
+    seeded = seed_first_feature(project)
+
+    assert seeded is not None
+    data = json.loads((harness / "feature_list.json").read_text(encoding="utf-8"))
+    assert len(data["features"]) == 1
+    feature = data["features"][0]
+    assert feature["status"] == "pending"
+    assert feature["id"] == 1
+    assert "manga" in feature["description"]
+    assert feature["acceptance"]
+
+
+def test_existing_board_is_not_overwritten(tmp_path):
+    project = tmp_path / "proj"
+    harness = project / "harness"
+    harness.mkdir(parents=True)
+    existing = {"features": [{"id": 1, "name": "already", "status": "done"}]}
+    (harness / "feature_list.json").write_text(json.dumps(existing), encoding="utf-8")
+
+    assert seed_first_feature(project) is None
+    assert json.loads((harness / "feature_list.json").read_text()) == existing
 
 
 def test_typescript_scaffold_has_a_runnable_test_script(tmp_path):

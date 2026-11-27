@@ -7,7 +7,10 @@ Conventional-Commits hook lands in the enclosing repo's .git.
 from __future__ import annotations
 
 import json
+import os
+import re
 import subprocess
+import tempfile
 from pathlib import Path
 
 from farga_core.schema import Manifest, Stack
@@ -208,6 +211,55 @@ def stack_scaffold_files(language: str, project_name: str) -> dict[str, str]:
     return {}
 
 
+def seed_first_feature(project: Path) -> dict[str, object] | None:
+    """Seed one pending feature from concept.md when the board is empty.
+
+    `farga-core run` delegates to buildwright, which refuses an empty queue. A
+    greenfield project must therefore arrive with a first feature the SDD loop can
+    pick up; the spec-author phase refines it from the concept text.
+    """
+    board = project / "harness" / "feature_list.json"
+    concept_file = project / "concept.md"
+    if not board.is_file() or not concept_file.is_file():
+        return None
+    try:
+        data = json.loads(board.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if data.get("features"):
+        return None
+    concept = concept_file.read_text(encoding="utf-8").strip()
+    if not concept:
+        return None
+    first_line = next(
+        (line.strip() for line in concept.splitlines() if line.strip()), "Projecte inicial"
+    )
+    title = re.sub(r"^#+\s*", "", first_line)[:100]
+    slug = re.sub(r"[^a-z0-9]+", "_", title.lower()).strip("_") or "initial_concept"
+    feature = {
+        "id": 1,
+        "name": slug,
+        "title": title,
+        "description": concept,
+        "acceptance": [
+            "Implementa el concepte descrit a concept.md",
+            "harness/init.sh passa amb tests verds",
+        ],
+        "status": "pending",
+    }
+    data.setdefault("features", []).append(feature)
+    fd, temporary = tempfile.mkstemp(dir=str(board.parent), suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(data, handle, indent=2, ensure_ascii=False)
+            handle.write("\n")
+        os.replace(temporary, board)
+    except OSError:
+        Path(temporary).unlink(missing_ok=True)
+        raise
+    return feature
+
+
 def ensure_stack_scaffold(project: Path, language: str) -> list[Path]:
     """Create the permanent stack files; return the ones this run created."""
     created: list[Path] = []
@@ -308,6 +360,7 @@ def up(
         if rc != 0:
             raise RuntimeError(f"scaffold step failed (rc={rc}): {label}")
 
+    seed_first_feature(project)
     (project / "models.yaml").write_text(render_models_yaml(manifest), encoding="utf-8")
     gi = project / ".gitignore"
     gi.write_text(
