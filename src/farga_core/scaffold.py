@@ -6,6 +6,7 @@ Conventional-Commits hook lands in the enclosing repo's .git.
 
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
@@ -100,13 +101,13 @@ def _run(cmd: list[str], cwd: Path | None = None) -> int:
     return subprocess.run(cmd, cwd=cwd, check=False).returncode
 
 
-# The published harness detects the stack from files; a new project is empty and
-# would fall back to "generic". These temporary markers make the installer see the
-# stack chosen in the manifest. They are removed before the initial commit.
+# The harness detects the stack from files and verifies a test framework before it
+# reports "Environment ready". A new project must ship those files from `up`, otherwise
+# the first session starts with a red gate. These files are permanent and committed.
 STACK_MARKERS: dict[str, tuple[str, ...]] = {
-    "typescript": ("tsconfig.json",),
+    "typescript": ("tsconfig.json", "package.json"),
     "node": ("package.json",),
-    "python": ("pyproject.toml",),
+    "python": ("pyproject.toml", "tests"),
     "go": ("go.mod",),
     "java": ("pom.xml",),
     "rust": ("Cargo.toml",),
@@ -114,28 +115,125 @@ STACK_MARKERS: dict[str, tuple[str, ...]] = {
     "generic": (),
 }
 
+_SMOKE_MJS = """\
+import test from "node:test";
+import assert from "node:assert/strict";
 
-def ensure_stack_markers(project: Path, language: str) -> list[Path]:
-    """Create the harness detection markers that are missing; return the created ones."""
+test("scaffold is ready", () => assert.equal(1 + 1, 2));
+"""
+
+_SMOKE_PY = """\
+def test_scaffold_is_ready() -> None:
+    assert 1 + 1 == 2
+"""
+
+_SMOKE_GO = """\
+package main
+
+import "testing"
+
+func TestScaffoldIsReady(t *testing.T) {
+	if 1+1 != 2 {
+		t.Fatal("scaffold is not ready")
+	}
+}
+"""
+
+_SMOKE_RS = """\
+#[test]
+fn scaffold_is_ready() {
+    assert_eq!(1 + 1, 2);
+}
+"""
+
+
+def stack_scaffold_files(language: str, project_name: str) -> dict[str, str]:
+    """Minimal real project files with a runnable test suite for the harness."""
+    if language in ("typescript", "node"):
+        package = {
+            "name": project_name,
+            "private": True,
+            "type": "module",
+            "scripts": {
+                "test": "node --test tests/*.test.mjs",
+                "build": "tsc --noEmit" if language == "typescript" else "echo 'no build step'",
+            },
+        }
+        files = {
+            "package.json": json.dumps(package, indent=2) + "\n",
+            "tests/smoke.test.mjs": _SMOKE_MJS,
+        }
+        if language == "typescript":
+            files["tsconfig.json"] = (
+                json.dumps(
+                    {
+                        "compilerOptions": {
+                            "target": "ES2022",
+                            "module": "ESNext",
+                            "moduleResolution": "bundler",
+                            "strict": True,
+                            "noEmit": True,
+                        },
+                        "include": ["src", "tests"],
+                    },
+                    indent=2,
+                )
+                + "\n"
+            )
+        return files
+    if language == "python":
+        return {
+            "pyproject.toml": (
+                "[project]\n"
+                f'name = "{project_name}"\n'
+                'version = "0.1.0"\n'
+                'requires-python = ">=3.10"\n\n'
+                "[tool.pytest.ini_options]\n"
+                'testpaths = ["tests"]\n'
+            ),
+            "tests/test_smoke.py": _SMOKE_PY,
+        }
+    if language == "go":
+        return {
+            "go.mod": f"module {project_name}\n\ngo 1.22\n",
+            "smoke_test.go": _SMOKE_GO,
+        }
+    if language == "rust":
+        return {
+            "Cargo.toml": (
+                f'[package]\nname = "{project_name}"\nversion = "0.1.0"\nedition = "2021"\n'
+            ),
+            "tests/smoke.rs": _SMOKE_RS,
+        }
+    return {}
+
+
+def ensure_stack_scaffold(project: Path, language: str) -> list[Path]:
+    """Create the permanent stack files; return the ones this run created."""
     created: list[Path] = []
+    real_files = stack_scaffold_files(language, project.name)
     for relative in STACK_MARKERS.get(language, ()):
+        if relative in real_files:
+            continue  # real content is written below, not an empty marker
+        path = project / relative
+        if relative in ("tests",) and path.is_dir():
+            continue
+        if path.exists():
+            continue
+        if relative.endswith("/") or relative == "tests":
+            path.mkdir(parents=True, exist_ok=True)
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("{}\n" if path.suffix == ".json" else "", encoding="utf-8")
+        created.append(path)
+    for relative, content in stack_scaffold_files(language, project.name).items():
         path = project / relative
         if path.exists():
             continue
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("{}\n" if path.suffix == ".json" else "", encoding="utf-8")
+        path.write_text(content, encoding="utf-8")
         created.append(path)
     return created
-
-
-def remove_stack_markers(project: Path, created: list[Path]) -> None:
-    """Remove only the markers this run created, plus the dirs it had to make."""
-    for path in reversed(created):
-        path.unlink(missing_ok=True)
-        parent = path.parent
-        while parent != project and parent.is_dir() and not any(parent.iterdir()):
-            parent.rmdir()
-            parent = parent.parent
 
 
 SCAFFOLD_COMMIT_PATHS = (
@@ -151,6 +249,14 @@ SCAFFOLD_COMMIT_PATHS = (
     "profile.md",
     ".gitignore",
     "models.yaml",
+    "package.json",
+    "tsconfig.json",
+    "tests",
+    "go.mod",
+    "Cargo.toml",
+    "pom.xml",
+    "build.gradle",
+    "app",
 )
 
 
@@ -194,16 +300,13 @@ def up(
         return plan
 
     project.mkdir(parents=True, exist_ok=True)
-    created_markers = ensure_stack_markers(project, manifest.stack.language.value)
-    try:
-        for label, cmd in steps:
-            if not cmd:
-                continue
-            rc = _run(cmd)
-            if rc != 0:
-                raise RuntimeError(f"scaffold step failed (rc={rc}): {label}")
-    finally:
-        remove_stack_markers(project, created_markers)
+    ensure_stack_scaffold(project, manifest.stack.language.value)
+    for label, cmd in steps:
+        if not cmd:
+            continue
+        rc = _run(cmd)
+        if rc != 0:
+            raise RuntimeError(f"scaffold step failed (rc={rc}): {label}")
 
     (project / "models.yaml").write_text(render_models_yaml(manifest), encoding="utf-8")
     gi = project / ".gitignore"
