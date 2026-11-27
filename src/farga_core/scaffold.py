@@ -100,6 +100,29 @@ def _run(cmd: list[str], cwd: Path | None = None) -> int:
     return subprocess.run(cmd, cwd=cwd, check=False).returncode
 
 
+SCAFFOLD_COMMIT_PATHS = (
+    "AGENTS.md",
+    "HARNESS.md",
+    "opencode.json",
+    ".opencode",
+    "docs",
+    "harness",
+    "pyproject.toml",
+    "farga.yaml",
+    "concept.md",
+    "profile.md",
+    ".gitignore",
+    "models.yaml",
+)
+
+
+def commit_paths_for(project: Path) -> list[str]:
+    """Només els paths que existeixen: un scaffold net no té pyproject.toml (el
+    crea el bucle de build) i un pathspec inexistent fa fallir `git add` (rc=1),
+    trencant la cadena new → architect → up."""
+    return [p for p in SCAFFOLD_COMMIT_PATHS if (project / p).exists()]
+
+
 def up(
     manifest: Manifest,
     project: Path,
@@ -154,18 +177,7 @@ def up(
             str(commit_sh),
             "-m",
             "chore(scaffold): harness + manifest farga",
-            "AGENTS.md",
-            "HARNESS.md",
-            "opencode.json",
-            ".opencode",
-            "docs",
-            "harness",
-            "pyproject.toml",
-            "farga.yaml",
-            "concept.md",
-            "profile.md",
-            ".gitignore",
-            "models.yaml",
+            *commit_paths_for(project),
         ],
         cwd=project,
     )

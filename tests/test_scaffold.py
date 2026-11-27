@@ -4,6 +4,7 @@ import pytest
 
 from farga_core.scaffold import (
     GITIGNORE_BLOCK,
+    commit_paths_for,
     ensure_gitignore,
     installer_argv,
     render_models_yaml,
@@ -57,3 +58,17 @@ def test_ensure_gitignore_idempotent():
     assert twice == once
     assert twice.count(GITIGNORE_BLOCK) == 1
     assert ensure_gitignore("") == GITIGNORE_BLOCK
+
+
+def test_commit_paths_skip_missing(tmp_path):
+    """Un scaffold net no té pyproject.toml (l'afegeix el bucle de build): els
+    pathspecs inexistents feien fallir `git add` (rc=1) i trencaven la cadena
+    new → architect → up que el wizard d'integració verifica en viu."""
+    (tmp_path / "AGENTS.md").write_text("x", encoding="utf-8")
+    (tmp_path / "harness").mkdir()
+    (tmp_path / "farga.yaml").write_text("y", encoding="utf-8")
+    assert commit_paths_for(tmp_path) == ["AGENTS.md", "harness", "farga.yaml"]
+
+
+def test_commit_paths_empty_when_nothing_exists(tmp_path):
+    assert commit_paths_for(tmp_path) == []
